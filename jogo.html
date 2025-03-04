@@ -1,0 +1,171 @@
+<!doctype html> 
+<html lang="pt"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Jogo Phaser - Exemplo</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #87CEEB;
+        }
+    </style>
+</head>
+
+<body>
+<script>
+// Configuração do jogo
+var configuracao = {
+    type: Phaser.AUTO,
+    width: 1200,
+    height: 600,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 300 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: uptade
+    }
+};
+
+var jogador;
+var estrelas;
+var bombas;
+var plataformas;
+var teclas;
+var pontuacao = 0;
+var fimDeJogo = false;
+var textoPontuacao;
+
+var jogo = new Phaser.Game(configuracao);
+
+function preload() {
+    this.load.image('fundo', 'assets/fundo1.jpeg');
+    this.load.image('chao', 'assets/pista2.png');
+    this.load.image('estrela', 'assets/star.png');
+    this.load.image('bomba', 'assets/bomb.png');
+    this.load.spritesheet('personagem', 'assets/mcQueen.png', { frameWidth: 160, frameHeight: 70 });
+}
+
+function create() {
+    this.add.image(1000, 220, 'fundo');
+    plataformas = this.physics.add.staticGroup();
+
+    // Criando plataformas
+    plataformas.create(200, 630, 'chao').setScale(2).refreshBody();
+    plataformas.create(400, 200, 'chao');
+    plataformas.create(50, 400, 'chao');
+    plataformas.create(650, 350, 'chao');
+
+    plataformas.create(100, 600, 'chao').setScale(2).refreshBody();
+    plataformas.create(500, 600, 'chao').setScale(2).refreshBody();
+    plataformas.create(1000, 600, 'chao').setScale(2).refreshBody();
+   
+
+    // Criando o jogador
+    jogador = this.physics.add.sprite(100, 450, 'personagem');
+    jogador.setBounce(0.2);
+    jogador.setCollideWorldBounds(true);
+
+    // Animações do jogador
+    this.anims.create({
+        key: 'esquerda',
+        frames: this.anims.generateFrameNumbers('personagem', { start: 0, end: 2 }),
+        frameRate: 10,
+        repeat: -1
+    });
+
+    this.anims.create({
+        key: 'parado',
+        frames: [ { key: 'personagem', frame: 3 } ],
+        frameRate: 20
+    });
+
+    this.anims.create({
+        key: 'direita',
+        frames: this.anims.generateFrameNumbers('personagem', { start: 0, end: 2 }),
+        frameRate: 10,
+        repeat: -1
+    });
+    
+    teclas = this.input.keyboard.createCursorKeys();
+    
+    // Criando estrelas
+    estrelas = this.physics.add.group({
+        key: 'estrela',
+        repeat: 11,
+        setXY: { x: 12, y: 0, stepX: 70 }
+    });
+
+    estrelas.children.iterate(function (estrela) {
+        estrela.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+    });
+
+    bombas = this.physics.add.group();
+
+    textoPontuacao = this.add.text(100, 16, 'Pontuação: 0', { fontSize: '32px', fill: '#000' });
+
+    // Colisões
+    this.physics.add.collider(jogador, plataformas);
+    this.physics.add.collider(estrelas, plataformas);
+    this.physics.add.collider(bombas, plataformas);
+    this.physics.add.overlap(jogador, estrelas, coletarEstrela, null, this);
+    this.physics.add.collider(jogador, bombas, colidiuComBomba, null, this);
+}
+
+function uptade() {
+    if (fimDeJogo) return;
+
+    if (teclas.left.isDown) {
+        jogador.setVelocityX(-160);
+        jogador.anims.play('esquerda', true);
+    } else if (teclas.right.isDown) {
+        jogador.setVelocityX(160);
+        jogador.anims.play('direita', true);
+    } else {
+        jogador.setVelocityX(0);
+        jogador.anims.play('parado');
+    }
+
+    if (teclas.up.isDown && jogador.body.touching.down) {
+        jogador.setVelocityY(-330);
+    }
+}
+
+function coletarEstrela(jogador, estrela) {
+    estrela.disableBody(true, true);
+    pontuacao += 10;
+    textoPontuacao.setText('Pontuação: ' + pontuacao);
+
+    if (estrelas.countActive(true) === 0) {
+        estrelas.children.iterate(function (estrela) {
+            estrela.enableBody(true, estrela.x, 0, true, true);
+        });
+
+        var x = (jogador.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+        var bomba = bombas.create(x, 16, 'bomba');
+        bomba.setBounce(1);
+        bomba.setCollideWorldBounds(true);
+        bomba.setVelocity(Phaser.Math.Between(-200, 200), 20);
+        bomba.allowGravity = false;
+    }
+}
+
+function colidiuComBomba(jogador, bomba) {
+    this.physics.pause();
+    jogador.setTint(0xff0000);
+    jogador.anims.play('parado');
+    fimDeJogo = true;
+}
+</script>
+</body>
+</html>
