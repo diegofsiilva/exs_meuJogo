@@ -1,6 +1,6 @@
-<!doctype html> 
-<html lang="pt"> 
-<head> 
+<!doctype html>
+<html lang="pt">
+<head>
     <meta charset="UTF-8" />
     <title>Race</title>
     <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
@@ -39,7 +39,7 @@ var configuracao = {
 
 // Variáveis do jogo
 var jogador;
-var estrelas;
+var trofeus;  // Troféus que o jogador vai coletar
 var bombas;
 var plataformas;
 var teclas;
@@ -52,33 +52,45 @@ var jogo = new Phaser.Game(configuracao);
 
 // Carregando os arquivos necessários antes do jogo começar
 function preload() {
+    // Carregando as imagens e sprites que serão usadas no jogo
     this.load.image('fundo', 'assets/fundo1.jpeg');
     this.load.image('chao', 'assets/pista2.png');
-    this.load.image('estrela', 'assets/star.png');
+    this.load.image('trofeu', 'assets/tro.png');  // Troféu (antiga estrela)
     this.load.image('bomba', 'assets/bomb.png');
     this.load.spritesheet('personagem', 'assets/mcQueen.png', { frameWidth: 160, frameHeight: 70 });
 }
 
 // Criando os elementos do jogo
 function create() {
+    // Adicionando a imagem do fundo
     this.add.image(1000, 220, 'fundo'); // Adiciona o fundo
-    plataformas = this.physics.add.staticGroup(); // Criando um grupo de plataformas
 
-    // Criando algumas plataformas
-    plataformas.create(200, 630, 'chao').setScale(2).refreshBody();
-    plataformas.create(400, 200, 'chao');
-    plataformas.create(50, 400, 'chao');
-    plataformas.create(650, 350, 'chao');
-    plataformas.create(100, 600, 'chao').setScale(2).refreshBody();
-    plataformas.create(500, 600, 'chao').setScale(2).refreshBody();
-    plataformas.create(1000, 600, 'chao').setScale(2).refreshBody();
-   
-    // Criando o jogador
+    // Criando o grupo de plataformas
+    plataformas = this.physics.add.staticGroup();
+
+    // Definindo posições das plataformas em um array
+    var plataformasPosicoes = [
+        { x: 200, y: 700 },
+        { x: 500, y: 290 },
+        { x: 50, y: 450 },
+        { x: 880, y: 450 },
+        { x: 100, y: 600 },
+        { x: 500, y: 600 },
+        { x: 1000, y: 600 }
+    ];
+
+    // Criando as plataformas com uma estrutura de repetição
+    for (var i = 0; i < plataformasPosicoes.length; i++) {
+        var pos = plataformasPosicoes[i];
+        plataformas.create(pos.x, pos.y, 'chao').setScale(1).refreshBody(); // Cria cada plataforma
+    }
+
+    // Criando o jogador (personagem)
     jogador = this.physics.add.sprite(100, 450, 'personagem');
     jogador.setBounce(0.2); // Pequeno efeito de quique
-    jogador.setCollideWorldBounds(true); // pra limitar o jogador dentro da tela
+    jogador.setCollideWorldBounds(true); // Para garantir que o jogador não sai da tela
 
-    // Criando animações do personagem
+    // Criando animações do personagem para quando ele se move para a esquerda, direita ou fica parado
     this.anims.create({
         key: 'esquerda',
         frames: this.anims.generateFrameNumbers('personagem', { start: 0, end: 2 }),
@@ -99,80 +111,86 @@ function create() {
         repeat: -1
     });
     
-    teclas = this.input.keyboard.createCursorKeys(); // Pegando as teclas do teclado
-    
-    // Criando estrelas para coletar
-    estrelas = this.physics.add.group({
-        key: 'estrela',
+    // Pegando as teclas de direção para movimentar o jogador
+    teclas = this.input.keyboard.createCursorKeys();
+
+    // Criando os troféus pra o jogador coletar
+    trofeus = this.physics.add.group({
+        key: 'trofeu', 
         repeat: 11,
         setXY: { x: 12, y: 0, stepX: 70 }
     });
 
-    estrelas.children.iterate(function (estrela) {
-        estrela.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8)); // Faz as estrelas quicarem um pouco
+    // Fazendo os troféus quicarem um pouco
+    trofeus.children.iterate(function (trofeu) {
+        trofeu.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));  // Efeito de quique
     });
 
-    bombas = this.physics.add.group(); // Criando grupo de bombas
+    // Criando o grupo de bombas
+    bombas = this.physics.add.group();
 
+    // Exibindo a pontuação na tela
     textoPontuacao = this.add.text(100, 16, 'Pontuação: 0', { fontSize: '32px', fill: '#000' });
 
-    // Adicionando colisões
+    // Adicionando colisões entre o jogador e outros objetos
     this.physics.add.collider(jogador, plataformas);
-    this.physics.add.collider(estrelas, plataformas);
-    this.physics.add.collider(bombas, plataformas);
-    this.physics.add.overlap(jogador, estrelas, coletarEstrela, null, this);
-    this.physics.add.collider(jogador, bombas, colidiuComBomba, null, this);
+    this.physics.add.collider(trofeus, plataformas);  // Colisão com troféus
+    this.physics.add.collider(bombas, plataformas);  // Colisão com bombas
+    this.physics.add.overlap(jogador, trofeus, coletarTrofeu, null, this);  // Quando o jogador coleta o troféu
+    this.physics.add.collider(jogador, bombas, colidiuComBomba, null, this);  // Quando o jogador bate na bomba
 }
 
+// Função que atualiza a cada frame
 function uptade() {
     if (fimDeJogo) return; // Se o jogo acabou, não faz mais nada
 
     // Movimento do personagem
-    if (teclas.left.isDown) {                //condicional requisito
-        jogador.setVelocityX(-160);
-        jogador.anims.play('esquerda', true);
-    } else if (teclas.right.isDown) {
-        jogador.setVelocityX(160);
-        jogador.anims.play('direita', true);
-    } else {
-        jogador.setVelocityX(0);
-        jogador.anims.play('parado');
+    if (teclas.left.isDown) {  // Quando a seta da esquerda é pressionada
+        jogador.setVelocityX(-160);  // Move o jogador para a esquerda
+        jogador.anims.play('esquerda', true);  // Executa a animação de movimento para a esquerda
+    } else if (teclas.right.isDown) {  // Quando a seta da direita é pressionada
+        jogador.setVelocityX(160);  // Move o jogador para a direita
+        jogador.anims.play('direita', true);  // Executa a animação de movimento para a direita
+    } else {  // Quando nenhuma seta está pressionada
+        jogador.setVelocityX(0);  // O jogador para de se mover
+        jogador.anims.play('parado');  // Executa a animação de parado
     }
 
-    // Pulo
+    // Verifica se o jogador está pressionando a tecla de pular (seta para cima)
     if (teclas.up.isDown && jogador.body.touching.down) {
-        jogador.setVelocityY(-330);
+        jogador.setVelocityY(-330);  // Faz o jogador pular
     }
 }
 
-// Função para coletar estrelas
-function coletarEstrela(jogador, estrela) {
-    estrela.disableBody(true, true); // Some com a estrela
-    pontuacao += 10;
-    textoPontuacao.setText('Pontuação: ' + pontuacao);
+// Função chamada quando o jogador coleta um troféu
+function coletarTrofeu(jogador, trofeu) {
+    trofeu.disableBody(true, true);  // Remove o troféu da tela
+    pontuacao += 10;  // Aumenta a pontuação em 10
+    textoPontuacao.setText('Pontuação: ' + pontuacao);  // Atualiza a pontuação na tela
 
-    // Se não houver mais estrelas na tela, cria novas
-    if (estrelas.countActive(true) === 0) {
-        estrelas.children.iterate(function (estrela) {
-            estrela.enableBody(true, estrela.x, 0, true, true);
+    // Se não houver mais troféus visíveis, cria novos troféus
+    if (trofeus.countActive(true) === 0) {
+        // Reativa os troféus que foram desativados
+        trofeus.children.iterate(function (trofeu) {
+            trofeu.enableBody(true, trofeu.x, 0, true, true);  // Reativa o troféu no topo
         });
 
+        // Cria uma nova bomba aleatória após todos os troféus serem coletados
         var x = (jogador.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
         var bomba = bombas.create(x, 16, 'bomba');
-        bomba.setBounce(1);
-        bomba.setCollideWorldBounds(true);
-        bomba.setVelocity(Phaser.Math.Between(-200, 200), 20);
-        bomba.allowGravity = false;
+        bomba.setBounce(1);  // Faz a bomba quicar
+        bomba.setCollideWorldBounds(true);  // A bomba não sai da tela
+        bomba.setVelocity(Phaser.Math.Between(-200, 200), 20);  // A bomba se move aleatoriamente
+        bomba.allowGravity = false;  // Impede que a bomba caia com a gravidade
     }
 }
 
 // Função chamada quando o jogador bate em uma bomba
 function colidiuComBomba(jogador, bomba) {
-    this.physics.pause(); // Para tudo
-    jogador.setTint(0xff0000); // Deixa o jogador vermelho
-    jogador.anims.play('parado');
-    fimDeJogo = true; // Fim de jogo
-    
+    this.physics.pause();  // Para a física do jogo
+    jogador.setTint(0xff0000);  // Muda a cor do jogador para vermelho
+    jogador.anims.play('parado');  // O jogador fica parado
+    fimDeJogo = true;  // Marca o fim do jogo
 }
 </script>
 </body>
