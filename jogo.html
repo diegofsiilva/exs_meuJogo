@@ -2,7 +2,7 @@
 <html lang="pt"> 
 <head> 
     <meta charset="UTF-8" />
-    <title>Jogo Phaser - Exemplo</title>
+    <title>Race</title>
     <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
     <style>
         body {
@@ -11,14 +11,14 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background-color: #87CEEB;
+            background-color: #87CEEB; /* Cor de fundo azul clarinho */
         }
     </style>
 </head>
 
 <body>
 <script>
-// Configuração do jogo
+// Configuração inicial do jogo
 var configuracao = {
     type: Phaser.AUTO,
     width: 1200,
@@ -26,17 +26,18 @@ var configuracao = {
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 300 },
+            gravity: { y: 300 }, // Gravidade puxando os objetos pra baixo
             debug: false
         }
     },
     scene: {
-        preload: preload,
-        create: create,
-        update: uptade
+        preload: preload, // Função que carrega os arquivos
+        create: create,   // Função que cria os objetos
+        update: uptade    // Função que atualiza o jogo a cada frame
     }
 };
 
+// Variáveis do jogo
 var jogador;
 var estrelas;
 var bombas;
@@ -46,8 +47,10 @@ var pontuacao = 0;
 var fimDeJogo = false;
 var textoPontuacao;
 
+// Criando o jogo com a configuração definida
 var jogo = new Phaser.Game(configuracao);
 
+// Carregando os arquivos necessários antes do jogo começar
 function preload() {
     this.load.image('fundo', 'assets/fundo1.jpeg');
     this.load.image('chao', 'assets/pista2.png');
@@ -56,27 +59,26 @@ function preload() {
     this.load.spritesheet('personagem', 'assets/mcQueen.png', { frameWidth: 160, frameHeight: 70 });
 }
 
+// Criando os elementos do jogo
 function create() {
-    this.add.image(1000, 220, 'fundo');
-    plataformas = this.physics.add.staticGroup();
+    this.add.image(1000, 220, 'fundo'); // Adiciona o fundo
+    plataformas = this.physics.add.staticGroup(); // Criando um grupo de plataformas
 
-    // Criando plataformas
+    // Criando algumas plataformas
     plataformas.create(200, 630, 'chao').setScale(2).refreshBody();
     plataformas.create(400, 200, 'chao');
     plataformas.create(50, 400, 'chao');
     plataformas.create(650, 350, 'chao');
-
     plataformas.create(100, 600, 'chao').setScale(2).refreshBody();
     plataformas.create(500, 600, 'chao').setScale(2).refreshBody();
     plataformas.create(1000, 600, 'chao').setScale(2).refreshBody();
    
-
     // Criando o jogador
     jogador = this.physics.add.sprite(100, 450, 'personagem');
-    jogador.setBounce(0.2);
-    jogador.setCollideWorldBounds(true);
+    jogador.setBounce(0.2); // Pequeno efeito de quique
+    jogador.setCollideWorldBounds(true); // pra limitar o jogador dentro da tela
 
-    // Animações do jogador
+    // Criando animações do personagem
     this.anims.create({
         key: 'esquerda',
         frames: this.anims.generateFrameNumbers('personagem', { start: 0, end: 2 }),
@@ -97,9 +99,9 @@ function create() {
         repeat: -1
     });
     
-    teclas = this.input.keyboard.createCursorKeys();
+    teclas = this.input.keyboard.createCursorKeys(); // Pegando as teclas do teclado
     
-    // Criando estrelas
+    // Criando estrelas para coletar
     estrelas = this.physics.add.group({
         key: 'estrela',
         repeat: 11,
@@ -107,14 +109,14 @@ function create() {
     });
 
     estrelas.children.iterate(function (estrela) {
-        estrela.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+        estrela.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8)); // Faz as estrelas quicarem um pouco
     });
 
-    bombas = this.physics.add.group();
+    bombas = this.physics.add.group(); // Criando grupo de bombas
 
     textoPontuacao = this.add.text(100, 16, 'Pontuação: 0', { fontSize: '32px', fill: '#000' });
 
-    // Colisões
+    // Adicionando colisões
     this.physics.add.collider(jogador, plataformas);
     this.physics.add.collider(estrelas, plataformas);
     this.physics.add.collider(bombas, plataformas);
@@ -123,9 +125,10 @@ function create() {
 }
 
 function uptade() {
-    if (fimDeJogo) return;
+    if (fimDeJogo) return; // Se o jogo acabou, não faz mais nada
 
-    if (teclas.left.isDown) {
+    // Movimento do personagem
+    if (teclas.left.isDown) {                //condicional requisito
         jogador.setVelocityX(-160);
         jogador.anims.play('esquerda', true);
     } else if (teclas.right.isDown) {
@@ -136,16 +139,19 @@ function uptade() {
         jogador.anims.play('parado');
     }
 
+    // Pulo
     if (teclas.up.isDown && jogador.body.touching.down) {
         jogador.setVelocityY(-330);
     }
 }
 
+// Função para coletar estrelas
 function coletarEstrela(jogador, estrela) {
-    estrela.disableBody(true, true);
+    estrela.disableBody(true, true); // Some com a estrela
     pontuacao += 10;
     textoPontuacao.setText('Pontuação: ' + pontuacao);
 
+    // Se não houver mais estrelas na tela, cria novas
     if (estrelas.countActive(true) === 0) {
         estrelas.children.iterate(function (estrela) {
             estrela.enableBody(true, estrela.x, 0, true, true);
@@ -160,11 +166,13 @@ function coletarEstrela(jogador, estrela) {
     }
 }
 
+// Função chamada quando o jogador bate em uma bomba
 function colidiuComBomba(jogador, bomba) {
-    this.physics.pause();
-    jogador.setTint(0xff0000);
+    this.physics.pause(); // Para tudo
+    jogador.setTint(0xff0000); // Deixa o jogador vermelho
     jogador.anims.play('parado');
-    fimDeJogo = true;
+    fimDeJogo = true; // Fim de jogo
+    
 }
 </script>
 </body>
