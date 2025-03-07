@@ -7,11 +7,11 @@ export default class Jogo extends Phaser.Scene {
 
     // aqui é onde eu carrego tudo o que vai ser usado no jogo.
     preload() {
-        this.load.image('fundo', 'assets/fundo1.jpeg');  // Imagem de fundo
-        this.load.image('chao', 'assets/pista2.png');    // Imagem do chão
-        this.load.image('trofeu', 'assets/tro.png');      // Imagem do troféu
-        this.load.image('bomba', 'assets/bomb.png');      // Imagem da bomba
-        this.load.spritesheet('personagem', 'assets/mcQueen.png', { frameWidth: 160, frameHeight: 70 }); // Personagem principal
+        this.load.image('fundo', '../assets/fundo1.jpeg');  // Imagem de fundo
+        this.load.image('chao', '../assets/pista2.png');    // Imagem do chão
+        this.load.image('trofeu', '../assets/tro.png');      // Imagem do troféu
+        this.load.image('bomba', '../assets/bomb.png');      // Imagem da bomba
+        this.load.spritesheet('personagem', '../assets/mcQueen.png', { frameWidth: 160, frameHeight: 70 }); // Personagem principal
     }
 
     // aqui é onde coloco os itens na tela e começo a configurar a física.

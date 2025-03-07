@@ -7,9 +7,9 @@ export default class Menu extends Phaser.Scene {
 
     // Aqui é onde eu carrego as imagens que vou usar mais tarde.
     preload() {
-        this.load.image('background', 'assets/back.jpeg');  // Imagem de fundo
-        this.load.image('logo', 'assets/logoFi.png');        // A logo do jogo
-        this.load.image('startButton', 'assets/start1.png'); // E o botão de começar
+        this.load.image('background', '../assets/back.jpeg');  // Imagem de fundo
+        this.load.image('logo', '../assets/logoFi.png');        // A logo do jogo
+        this.load.image('startButton', '../assets/start1.png'); // E o botão de começar
     }
 
     // Agora, é aqui que eu coloco as coisas na tela.
